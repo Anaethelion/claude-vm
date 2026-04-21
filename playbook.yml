@@ -168,14 +168,15 @@
 
     # ── Claude Desktop ─────────────────────────────────────────────────────────
 
-    - name: Check if Claude app bundle exists
-      ansible.builtin.stat:
-        path: /Applications/Claude.app
-      register: claude_app
+    - name: Check if Claude Desktop cask is installed
+      ansible.builtin.shell: "{{ brew_bin }}/brew list --cask claude"
+      register: claude_cask_check
+      failed_when: false
+      changed_when: false
 
     - name: Install Claude Desktop
       ansible.builtin.shell: "{{ brew_bin }}/brew install --cask claude"
-      when: not claude_app.stat.exists
+      when: claude_cask_check.rc != 0
       changed_when: true
 
     - name: Attempt to remove quarantine from Claude
