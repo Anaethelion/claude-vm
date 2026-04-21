@@ -33,12 +33,26 @@ SCRIPT="$BATS_TEST_DIRNAME/../setup-vm.sh"
   [[ "$output" == *"--disk-size 200"* ]]
 }
 
-@test "dry-run prints SSH provisioning steps" {
+@test "dry-run prints ansible provisioning steps" {
   run bash "$SCRIPT" --dry-run
   [ "$status" -eq 0 ]
   [[ "$output" == *"tart run --no-graphics"* ]]
-  [[ "$output" == *"provision.sh"* ]]
   [[ "$output" == *"tart stop"* ]]
+  [[ "$output" == *"ssh-copy-id"* ]]
+  [[ "$output" == *"ansible-playbook"* ]]
+}
+
+@test "dry-run does not include provision.sh" {
+  run bash "$SCRIPT" --dry-run
+  [ "$status" -eq 0 ]
+  [[ "$output" != *"provision.sh"* ]]
+}
+
+@test "dry-run with --check includes --check --diff in ansible command" {
+  run bash "$SCRIPT" --dry-run --check
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"ansible-playbook"* ]]
+  [[ "$output" == *"--check --diff"* ]]
 }
 
 @test "exits nonzero on unknown flag" {
