@@ -182,3 +182,22 @@
       ansible.builtin.shell: xattr -rd com.apple.quarantine /Applications/Claude.app
       failed_when: false
       changed_when: false
+
+    # ── Claude Code CLI ────────────────────────────────────────────────────────
+
+    - name: Check if Claude Code CLI is installed
+      ansible.builtin.shell: |
+        export NVM_DIR="{{ nvm_dir }}"
+        [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+        command -v claude
+      register: claude_cli_check
+      failed_when: false
+      changed_when: false
+
+    - name: Install Claude Code CLI
+      ansible.builtin.shell: |
+        export NVM_DIR="{{ nvm_dir }}"
+        [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+        npm install -g @anthropic-ai/claude-code
+      when: claude_cli_check.rc != 0
+      changed_when: true
