@@ -1,0 +1,8 @@
+# Mount name=absolute-host-path
+# Copy this file to vm-mounts.conf and fill in your actual paths.
+# Inside the VM each mount is at: /Volumes/My Shared Files/<name>
+
+your-repo=/absolute/path/to/your-repo
+
+
+
