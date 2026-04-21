@@ -4,13 +4,14 @@ Scripts to create and launch a macOS 15 Sequoia [Tart](https://github.com/cirrus
 
 ## How it works
 
-| Script | Role |
-|--------|------|
+| File | Role |
+|------|------|
 | `setup-vm.sh` | One-time: creates the VM and provisions it headlessly via SSH |
 | `playbook.yml` | Ansible playbook; runs inside the VM via SSH to install all dev deps |
 | `start-vm.sh` | Daily driver: reads `vm-mounts.conf`, mounts host dirs, opens the VM GUI |
+| `Makefile` | Convenience wrapper — run `make` to see all available commands |
 
-Installed inside the VM: Homebrew, Go (latest), Node.js 24 (via nvm), goimports, golangci-lint, pre-commit, GNU coreutils, Claude Code CLI.
+Installed inside the VM: Homebrew, Go, golangci-lint, goimports, pre-commit, GNU coreutils, gh, Node.js 24 (via nvm), Ghostty, Claude Desktop.
 
 Host repos are mounted read-write at `/Volumes/My Shared Files/<name>` inside the VM.
 
@@ -19,14 +20,6 @@ Host repos are mounted read-write at `/Volumes/My Shared Files/<name>` inside th
 ```bash
 brew install cirruslabs/cli/tart
 brew install sshpass
-```
-
-Then set up the Ansible venv (one-time, on the host):
-
-```bash
-python3 -m venv .venv
-.venv/bin/pip install -r requirements.txt
-.venv/bin/ansible-galaxy collection install community.general
 ```
 
 `bats-core` is only needed to run the test suite:
@@ -38,10 +31,10 @@ brew install bats-core
 ## First-time setup
 
 ```bash
-./setup-vm.sh
+make setup
 ```
 
-This pulls the base macOS Sequoia image (~10 GB), clones it as `elastic-dev`, configures it with 12 vCPUs / 24 GB RAM / 200 GB disk, boots it headlessly, copies your SSH key into the VM, runs the Ansible playbook (~10 min), then shuts it down.
+This sets up the Ansible venv, pulls the base macOS Sequoia image (~10 GB), clones it as `elastic-dev`, configures it with 12 vCPUs / 24 GB RAM / 200 GB disk, boots it headlessly, copies your SSH key into the VM, runs the Ansible playbook (~10 min), then shuts it down.
 
 The default VM credentials are `admin` / `admin` — change the password on first login.
 
@@ -51,10 +44,10 @@ Use `--dry-run` to preview what would run without touching anything:
 ./setup-vm.sh --dry-run
 ```
 
-Use `--check` to diff what Ansible would change against an already-provisioned VM (no writes):
+Use `make check` to diff what Ansible would change against an already-provisioned VM (no writes):
 
 ```bash
-./setup-vm.sh --check
+make check
 ```
 
 ## Configure mounts
@@ -77,7 +70,7 @@ cli=/Users/you/elastic-cli
 ## Daily use
 
 ```bash
-./start-vm.sh
+make start
 ```
 
 This reads `vm-mounts.conf`, prints a mount table, and launches the VM GUI with all directories mounted. Preview without launching:
@@ -91,7 +84,7 @@ Inside the VM, mounted repos are at `/Volumes/My Shared Files/<name>`.
 ## Running tests
 
 ```bash
-bats tests/
+make test
 ```
 
 16 tests covering `setup-vm.sh` and `start-vm.sh` dry-run behaviour.
