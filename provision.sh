@@ -84,7 +84,7 @@ fi
 log "pre-commit: $(pre-commit --version)"
 
 # ── GNU coreutils ────────────────────────────────────────────────────────────
-if ! brew list coreutils &>/dev/null 2>&1; then
+if ! command -v gls &>/dev/null; then
   log "Installing GNU coreutils..."
   brew install coreutils
 fi
@@ -105,11 +105,11 @@ fi
 log "gh: $(gh --version | head -1)"
 
 # ── Ghostty ───────────────────────────────────────────────────────────────────
-if ! brew list --cask ghostty &>/dev/null 2>&1; then
+if [[ ! -d "/Applications/Ghostty.app" ]]; then
   log "Installing Ghostty..."
   brew install --cask ghostty
-  sudo xattr -rd com.apple.quarantine /Applications/Ghostty.app 2>/dev/null || true
 fi
+sudo xattr -rd com.apple.quarantine /Applications/Ghostty.app 2>/dev/null || true
 log "Ghostty: installed"
 
 # ── Register apps with Launch Services ───────────────────────────────────────
