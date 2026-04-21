@@ -186,11 +186,11 @@
 
     # ── Claude Code CLI ────────────────────────────────────────────────────────
 
-    - name: Check if Claude Code CLI is installed
+    - name: Check if Claude Code CLI npm package is installed
       ansible.builtin.shell: |
         export NVM_DIR="{{ nvm_dir }}"
         [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-        command -v claude
+        npm list -g --depth=0 @anthropic-ai/claude-code 2>/dev/null | grep -q claude-code
       register: claude_cli_check
       failed_when: false
       changed_when: false
