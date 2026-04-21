@@ -93,3 +93,7 @@ Single flat playbook, all tasks targeting `all` hosts as `admin` user. Tasks in 
 
 - `tests/test_setup_vm.bats` dry-run tests updated to match new `ansible-playbook` output
 - Existing `tests/test_start_vm.bats` unchanged
+
+## README updates
+
+Prerequisites section updated to add `ansible` and the `community.general` collection install command.
