@@ -139,7 +139,7 @@ trap - EXIT
 # Initiate graceful macOS shutdown from inside the VM so the filesystem
 # is fully flushed before the disk image is closed. Without this, writes
 # from the last Ansible tasks can be lost when tart stops the VM.
-ssh "${SSH_OPTS[@]}" "$VM_USER@$VM_IP" "sudo shutdown -h now" 2>/dev/null || true
+ssh "${SSH_OPTS[@]}" "$VM_USER@$VM_IP" "echo '$VM_PASS' | sudo -S shutdown -h now" 2>/dev/null || true
 # Wait for the tart process to exit (it exits once the VM powers off)
 wait "$TART_PID" 2>/dev/null || true
 # Belt-and-suspenders: ensure tart considers it stopped
