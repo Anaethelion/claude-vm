@@ -89,10 +89,11 @@
 
     # ── Dock ───────────────────────────────────────────────────────────────────
 
-    - name: Set Dock to show only Ghostty
+    - name: Set Dock to show only Ghostty and Claude
       ansible.builtin.shell: |
         defaults write com.apple.dock persistent-apps -array \
-          '<dict><key>tile-data</key><dict><key>file-data</key><dict><key>_CFURLString</key><string>/Applications/Ghostty.app</string><key>_CFURLStringType</key><integer>0</integer></dict></dict></dict>'
+          '<dict><key>tile-data</key><dict><key>file-data</key><dict><key>_CFURLString</key><string>/Applications/Ghostty.app</string><key>_CFURLStringType</key><integer>0</integer></dict></dict></dict>' \
+          '<dict><key>tile-data</key><dict><key>file-data</key><dict><key>_CFURLString</key><string>/Applications/Claude.app</string><key>_CFURLStringType</key><integer>0</integer></dict></dict></dict>'
         killall Dock
       changed_when: true
 
@@ -165,21 +166,28 @@
       when: not goimports_stat.stat.exists
       changed_when: true
 
-    # ── Claude Code ────────────────────────────────────────────────────────────
+    # ── Claude Desktop ─────────────────────────────────────────────────────────
 
-    - name: Check if Claude Code is installed
-      ansible.builtin.shell: |
-        export NVM_DIR="{{ nvm_dir }}"
-        [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-        command -v claude
-      register: claude_check
+    - name: Check if Claude app bundle exists
+      ansible.builtin.stat:
+        path: /Applications/Claude.app
+      register: claude_app
+
+    - name: Uninstall broken Claude cask if app bundle is missing
+      community.general.homebrew_cask:
+        name: claude
+        state: absent
+        path: "{{ brew_bin }}"
+      when: not claude_app.stat.exists
+      failed_when: false
+
+    - name: Install Claude Desktop
+      community.general.homebrew_cask:
+        name: claude
+        state: present
+        path: "{{ brew_bin }}"
+
+    - name: Attempt to remove quarantine from Claude
+      ansible.builtin.shell: xattr -rd com.apple.quarantine /Applications/Claude.app
       failed_when: false
       changed_when: false
-
-    - name: Install Claude Code
-      ansible.builtin.shell: |
-        export NVM_DIR="{{ nvm_dir }}"
-        [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-        npm install -g @anthropic-ai/claude-code
-      when: claude_check.rc != 0
-      changed_when: true
