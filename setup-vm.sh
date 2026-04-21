@@ -10,6 +10,7 @@ VM_USER="admin"
 VM_PASS="admin"
 SSH_TIMEOUT=300
 SSH_INTERVAL=5
+SSH_OPTS=(-o StrictHostKeyChecking=no -o PubkeyAuthentication=no -o PreferredAuthentications=password)
 
 usage() {
   echo "Usage: $0 [--dry-run]" >&2
@@ -86,8 +87,7 @@ while [[ $ELAPSED -lt $SSH_TIMEOUT ]]; do
   VM_IP=$(tart ip "$VM_NAME" 2>/dev/null || true)
   if [[ -n "$VM_IP" ]]; then
     if sshpass -p "$VM_PASS" ssh \
-        -o StrictHostKeyChecking=no \
-        -o ConnectTimeout=3 \
+        "${SSH_OPTS[@]}" -o ConnectTimeout=3 \
         "$VM_USER@$VM_IP" "echo ok" &>/dev/null; then
       break
     fi
@@ -105,12 +105,12 @@ fi
 log "VM reachable at $VM_IP"
 log "Copying provisioning script..."
 sshpass -p "$VM_PASS" scp \
-  -o StrictHostKeyChecking=no \
+  "${SSH_OPTS[@]}" \
   "$PROVISION_SCRIPT" "$VM_USER@$VM_IP:/tmp/provision.sh"
 
 log "Running provisioning script (this takes ~10 minutes)..."
 sshpass -p "$VM_PASS" ssh \
-  -o StrictHostKeyChecking=no \
+  "${SSH_OPTS[@]}" \
   "$VM_USER@$VM_IP" "bash /tmp/provision.sh"
 
 log "Provisioning complete. Shutting down VM..."
