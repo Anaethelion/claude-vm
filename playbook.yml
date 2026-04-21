@@ -202,3 +202,11 @@
         npm install -g @anthropic-ai/claude-code
       when: claude_cli_check.rc != 0
       changed_when: true
+
+    # ── Flush disk buffers ─────────────────────────────────────────────────────
+    # Must be last. Ensures all writes are committed to disk before tart stops
+    # the VM, preventing data loss from the most recently installed packages.
+
+    - name: Sync filesystem before shutdown
+      ansible.builtin.shell: sync
+      changed_when: false

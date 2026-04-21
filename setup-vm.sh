@@ -134,16 +134,10 @@ else
 fi
 "$ANSIBLE_PLAYBOOK" "${ANSIBLE_OPTS[@]}"
 
-log "Provisioning complete. Gracefully shutting down VM..."
+log "Provisioning complete. Shutting down VM..."
 trap - EXIT
-# Initiate graceful macOS shutdown from inside the VM so the filesystem
-# is fully flushed before the disk image is closed. Without this, writes
-# from the last Ansible tasks can be lost when tart stops the VM.
-ssh "${SSH_OPTS[@]}" "$VM_USER@$VM_IP" "echo '$VM_PASS' | sudo -S shutdown -h now" 2>/dev/null || true
-# Wait for the tart process to exit (it exits once the VM powers off)
+tart stop "$VM_NAME"
 wait "$TART_PID" 2>/dev/null || true
-# Belt-and-suspenders: ensure tart considers it stopped
-tart stop "$VM_NAME" 2>/dev/null || true
 
 log ""
 log "Setup complete!"
