@@ -16,14 +16,20 @@ Replace the bash `provision.sh` script with an Ansible playbook so that provisio
 | `provision.sh` | Deleted |
 | `playbook.yml` | New — all provisioning tasks |
 | `setup-vm.sh` | Updated — copy SSH key, call `ansible-playbook` |
+| `requirements.txt` | New — pins `ansible-core` for the project venv |
 | `tests/test_setup_vm.bats` | Updated — dry-run output reflects new commands |
 
 ### Host prerequisites
 
 ```bash
-brew install ansible
+brew install sshpass
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
 ansible-galaxy collection install community.general
 ```
+
+Ansible runs from a project-local Python venv (`.venv/`) rather than system-wide. `requirements.txt` pins `ansible-core` and any Python deps. `.venv/` is gitignored. `setup-vm.sh` activates the venv automatically before calling `ansible-playbook`.
 
 `sshpass` is still needed for the one-time SSH key copy during setup.
 
