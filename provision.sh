@@ -100,7 +100,8 @@ log "Claude Code: $(claude --version 2>/dev/null || echo 'installed')"
 # ── Ghostty ───────────────────────────────────────────────────────────────────
 if ! brew list --cask ghostty &>/dev/null 2>&1; then
   log "Installing Ghostty..."
-  brew install --cask --no-quarantine ghostty
+  brew install --cask ghostty
+  sudo xattr -rd com.apple.quarantine /Applications/Ghostty.app 2>/dev/null || true
 fi
 log "Ghostty: installed"
 
