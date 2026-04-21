@@ -7,7 +7,7 @@ Scripts to create and launch a macOS 15 Sequoia [Tart](https://github.com/cirrus
 | Script | Role |
 |--------|------|
 | `setup-vm.sh` | One-time: creates the VM and provisions it headlessly via SSH |
-| `provision.sh` | Runs inside the VM during setup; installs all dev deps |
+| `playbook.yml` | Ansible playbook; runs inside the VM via SSH to install all dev deps |
 | `start-vm.sh` | Daily driver: reads `vm-mounts.conf`, mounts host dirs, opens the VM GUI |
 
 Installed inside the VM: Homebrew, Go (latest), Node.js 24 (via nvm), goimports, golangci-lint, pre-commit, GNU coreutils, Claude Code CLI.
@@ -19,7 +19,20 @@ Host repos are mounted read-write at `/Volumes/My Shared Files/<name>` inside th
 ```bash
 brew install cirruslabs/cli/tart
 brew install sshpass
-brew install bats-core   # only needed to run tests
+```
+
+Then set up the Ansible venv (one-time, on the host):
+
+```bash
+python3 -m venv .venv
+.venv/bin/pip install -r requirements.txt
+.venv/bin/ansible-galaxy collection install community.general
+```
+
+`bats-core` is only needed to run the test suite:
+
+```bash
+brew install bats-core
 ```
 
 ## First-time setup
@@ -28,7 +41,7 @@ brew install bats-core   # only needed to run tests
 ./setup-vm.sh
 ```
 
-This pulls the base macOS Sequoia image (~10 GB), clones it as `elastic-dev`, configures it with 12 vCPUs / 24 GB RAM / 200 GB disk, boots it headlessly, runs `provision.sh` over SSH (~10 min), then shuts it down.
+This pulls the base macOS Sequoia image (~10 GB), clones it as `elastic-dev`, configures it with 12 vCPUs / 24 GB RAM / 200 GB disk, boots it headlessly, copies your SSH key into the VM, runs the Ansible playbook (~10 min), then shuts it down.
 
 The default VM credentials are `admin` / `admin` — change the password on first login.
 
@@ -36,6 +49,12 @@ Use `--dry-run` to preview what would run without touching anything:
 
 ```bash
 ./setup-vm.sh --dry-run
+```
+
+Use `--check` to diff what Ansible would change against an already-provisioned VM (no writes):
+
+```bash
+./setup-vm.sh --check
 ```
 
 ## Configure mounts
@@ -75,4 +94,4 @@ Inside the VM, mounted repos are at `/Volumes/My Shared Files/<name>`.
 bats tests/
 ```
 
-14 tests covering `setup-vm.sh` and `start-vm.sh` dry-run behaviour.
+16 tests covering `setup-vm.sh` and `start-vm.sh` dry-run behaviour.

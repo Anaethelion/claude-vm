@@ -4,8 +4,9 @@ set -euo pipefail
 VM_NAME="elastic-dev"
 BASE_IMAGE="ghcr.io/cirruslabs/macos-sequoia-base:latest"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROVISION_SCRIPT="$SCRIPT_DIR/provision.sh"
+ANSIBLE_PLAYBOOK="$SCRIPT_DIR/.venv/bin/ansible-playbook"
 DRY_RUN=false
+CHECK=false
 VM_USER="admin"
 VM_PASS="admin"
 SSH_TIMEOUT=300
@@ -13,7 +14,7 @@ SSH_INTERVAL=5
 SSH_OPTS=(-o StrictHostKeyChecking=no -o PubkeyAuthentication=no -o PreferredAuthentications=password)
 
 usage() {
-  echo "Usage: $0 [--dry-run]" >&2
+  echo "Usage: $0 [--dry-run] [--check]" >&2
   exit 1
 }
 
@@ -30,6 +31,7 @@ run_cmd() {
 while [[ $# -gt 0 ]]; do
   case $1 in
     --dry-run) DRY_RUN=true; shift ;;
+    --check)   CHECK=true; shift ;;
     *) usage ;;
   esac
 done
@@ -44,6 +46,14 @@ if ! "$DRY_RUN"; then
       exit 1
     fi
   done
+  if [[ ! -f "$ANSIBLE_PLAYBOOK" ]]; then
+    echo "Error: Ansible venv not found at $SCRIPT_DIR/.venv" >&2
+    echo "  Run:" >&2
+    echo "    python3 -m venv .venv" >&2
+    echo "    .venv/bin/pip install -r requirements.txt" >&2
+    echo "    .venv/bin/ansible-galaxy collection install community.general" >&2
+    exit 1
+  fi
 fi
 
 # ── Phase 1: VM creation ──────────────────────────────────────────────────────
@@ -61,10 +71,14 @@ fi
 log "Phase 2: Headless provisioning"
 
 if "$DRY_RUN"; then
+  ANSIBLE_CMD="ansible-playbook -i <ip>, playbook.yml"
+  if "$CHECK"; then
+    ANSIBLE_CMD="$ANSIBLE_CMD --check --diff"
+  fi
   echo "[dry-run] tart run --no-graphics $VM_NAME &"
   echo "[dry-run] wait for SSH at <ip>..."
-  echo "[dry-run] sshpass -p $VM_PASS scp provision.sh $VM_USER@<ip>:/tmp/provision.sh"
-  echo "[dry-run] sshpass -p $VM_PASS ssh $VM_USER@<ip> bash /tmp/provision.sh"
+  echo "[dry-run] ssh-copy-id $VM_USER@<ip>"
+  echo "[dry-run] $ANSIBLE_CMD"
   echo "[dry-run] tart stop $VM_NAME"
   exit 0
 fi
@@ -103,15 +117,22 @@ if [[ -z "$VM_IP" ]]; then
 fi
 
 log "VM reachable at $VM_IP"
-log "Copying provisioning script..."
-sshpass -p "$VM_PASS" scp \
-  "${SSH_OPTS[@]}" \
-  "$PROVISION_SCRIPT" "$VM_USER@$VM_IP:/tmp/provision.sh"
 
-log "Running provisioning script (this takes ~10 minutes)..."
-sshpass -p "$VM_PASS" ssh \
-  "${SSH_OPTS[@]}" \
-  "$VM_USER@$VM_IP" "bash /tmp/provision.sh"
+log "Copying SSH key to VM..."
+sshpass -p "$VM_PASS" ssh-copy-id \
+  -o StrictHostKeyChecking=no \
+  -o PreferredAuthentications=password \
+  -o PubkeyAuthentication=no \
+  "$VM_USER@$VM_IP" 2>/dev/null || true
+
+ANSIBLE_OPTS=(-i "$VM_IP," -u "$VM_USER" "$SCRIPT_DIR/playbook.yml")
+if "$CHECK"; then
+  ANSIBLE_OPTS+=(--check --diff)
+  log "Running Ansible playbook (check mode — no changes will be made)..."
+else
+  log "Running Ansible playbook (this takes ~10 minutes)..."
+fi
+"$ANSIBLE_PLAYBOOK" "${ANSIBLE_OPTS[@]}"
 
 log "Provisioning complete. Shutting down VM..."
 trap - EXIT
