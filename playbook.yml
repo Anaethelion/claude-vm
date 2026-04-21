@@ -173,19 +173,10 @@
         path: /Applications/Claude.app
       register: claude_app
 
-    - name: Uninstall broken Claude cask if app bundle is missing
-      community.general.homebrew_cask:
-        name: claude
-        state: absent
-        path: "{{ brew_bin }}"
-      when: not claude_app.stat.exists
-      failed_when: false
-
     - name: Install Claude Desktop
-      community.general.homebrew_cask:
-        name: claude
-        state: present
-        path: "{{ brew_bin }}"
+      ansible.builtin.shell: "{{ brew_bin }}/brew install --cask claude"
+      when: not claude_app.stat.exists
+      changed_when: true
 
     - name: Attempt to remove quarantine from Claude
       ansible.builtin.shell: xattr -rd com.apple.quarantine /Applications/Claude.app
