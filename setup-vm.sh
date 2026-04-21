@@ -125,7 +125,7 @@ sshpass -p "$VM_PASS" ssh-copy-id \
   -o PubkeyAuthentication=no \
   "$VM_USER@$VM_IP" 2>/dev/null || true
 
-ANSIBLE_OPTS=(-i "$VM_IP," "$SCRIPT_DIR/playbook.yml")
+ANSIBLE_OPTS=(-i "$VM_IP," -u "$VM_USER" "$SCRIPT_DIR/playbook.yml")
 if "$CHECK"; then
   ANSIBLE_OPTS+=(--check --diff)
   log "Running Ansible playbook (check mode — no changes will be made)..."
