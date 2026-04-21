@@ -7,10 +7,10 @@
     - env
 
   vars:
-    nvm_dir: "{{ ansible_env.HOME }}/.nvm"
+    nvm_dir: "{{ ansible_facts['env']['HOME'] }}/.nvm"
     nvm_version: "v0.40.1"
     node_version: "24"
-    go_bin: "{{ ansible_env.HOME }}/go/bin"
+    go_bin: "{{ ansible_facts['env']['HOME'] }}/go/bin"
     brew_bin: /opt/homebrew/bin
 
   tasks:
@@ -31,7 +31,7 @@
 
     - name: Persist Homebrew in ~/.zprofile
       ansible.builtin.lineinfile:
-        path: "{{ ansible_env.HOME }}/.zprofile"
+        path: "{{ ansible_facts['env']['HOME'] }}/.zprofile"
         line: 'eval "$(/opt/homebrew/bin/brew shellenv)"'
         create: true
         mode: "0644"
@@ -111,7 +111,7 @@
 
     - name: Persist nvm in ~/.zprofile
       ansible.builtin.lineinfile:
-        path: "{{ ansible_env.HOME }}/.zprofile"
+        path: "{{ ansible_facts['env']['HOME'] }}/.zprofile"
         line: 'export NVM_DIR="{{ nvm_dir }}"; [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"'
         create: true
         mode: "0644"
@@ -144,7 +144,7 @@
 
     - name: Persist Go bin in ~/.zprofile
       ansible.builtin.lineinfile:
-        path: "{{ ansible_env.HOME }}/.zprofile"
+        path: "{{ ansible_facts['env']['HOME'] }}/.zprofile"
         line: 'export PATH="{{ go_bin }}:$PATH"'
         create: true
         mode: "0644"
@@ -159,9 +159,9 @@
     - name: Install goimports
       ansible.builtin.shell: go install golang.org/x/tools/cmd/goimports@latest
       environment:
-        PATH: "{{ brew_bin }}:{{ go_bin }}:{{ ansible_env.PATH }}"
-        HOME: "{{ ansible_env.HOME }}"
-        GOPATH: "{{ ansible_env.HOME }}/go"
+        PATH: "{{ brew_bin }}:{{ go_bin }}:{{ ansible_facts['env']['PATH'] }}"
+        HOME: "{{ ansible_facts['env']['HOME'] }}"
+        GOPATH: "{{ ansible_facts['env']['HOME'] }}/go"
       when: not goimports_stat.stat.exists
       changed_when: true
 
