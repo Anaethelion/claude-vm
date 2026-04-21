@@ -107,6 +107,7 @@ log "gh: $(gh --version | head -1)"
 # ── Ghostty ───────────────────────────────────────────────────────────────────
 if [[ ! -d "/Applications/Ghostty.app" ]]; then
   log "Installing Ghostty..."
+  brew uninstall --cask ghostty 2>/dev/null || true
   brew install --cask ghostty
 fi
 sudo xattr -rd com.apple.quarantine /Applications/Ghostty.app 2>/dev/null || true
