@@ -1,4 +1,9 @@
-.PHONY: setup start check test venv
+.PHONY: setup start check test venv help
+
+help: ## Show available commands
+	@grep -E '^[a-zA-Z_-]+:.*##' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*##"}; {printf "  %-10s %s\n", $$1, $$2}'
+
+.DEFAULT_GOAL := help
 
 venv: .venv/bin/ansible-playbook ## Set up Ansible venv
 
