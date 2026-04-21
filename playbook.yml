@@ -2,6 +2,9 @@
 - name: Provision elastic-dev VM
   hosts: all
   become: false
+  gather_subset:
+    - "!all"
+    - env
 
   vars:
     nvm_dir: "{{ ansible_env.HOME }}/.nvm"
@@ -35,6 +38,9 @@
 
     # ── Brew formulae ──────────────────────────────────────────────────────────
 
+    # NOTE: In --check mode against an unprovisioned VM, this task may
+    # report errors because Homebrew was not actually installed above.
+    # --check is intended for use against an already-provisioned VM.
     - name: Install brew formulae
       community.general.homebrew:
         name:
@@ -67,12 +73,14 @@
         state: present
         path: "{{ brew_bin }}"
 
-    - name: Remove quarantine from Ghostty
+    # changed_when: false because we cannot reliably detect whether
+    # the attribute was present and removed.
+    - name: Attempt to remove quarantine from Ghostty
       ansible.builtin.shell: xattr -rd com.apple.quarantine /Applications/Ghostty.app
       failed_when: false
       changed_when: false
 
-    - name: Register apps with Launch Services
+    - name: Attempt to register apps with Launch Services
       ansible.builtin.shell: >
         /System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister
         -v /Applications/
@@ -109,7 +117,11 @@
       register: node_installed
       failed_when: false
       changed_when: false
+      # rc != 0 covers both "version not found" and "nvm not loaded" —
+      # both require the install task to run.
 
+    # NOTE: In --check mode without a prior nvm install, nvm sourcing will
+    # fail. --check is intended for use against an already-provisioned VM.
     - name: Install Node.js 24
       ansible.builtin.shell: |
         export NVM_DIR="{{ nvm_dir }}"
