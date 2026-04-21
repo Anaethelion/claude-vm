@@ -100,9 +100,14 @@ log "Claude Code: $(claude --version 2>/dev/null || echo 'installed')"
 # ── Ghostty ───────────────────────────────────────────────────────────────────
 if ! brew list --cask ghostty &>/dev/null 2>&1; then
   log "Installing Ghostty..."
-  brew install --cask ghostty
+  brew install --cask --no-quarantine ghostty
 fi
 log "Ghostty: installed"
+
+# ── Register apps with Launch Services ───────────────────────────────────────
+log "Registering apps with Launch Services..."
+/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister \
+  -v /Applications/ 2>/dev/null || true
 
 # ── Summary ──────────────────────────────────────────────────────────────────
 log ""
