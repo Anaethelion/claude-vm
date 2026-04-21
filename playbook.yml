@@ -87,6 +87,15 @@
       failed_when: false
       changed_when: false
 
+    # ── Dock ───────────────────────────────────────────────────────────────────
+
+    - name: Set Dock to show only Ghostty
+      ansible.builtin.shell: |
+        defaults write com.apple.dock persistent-apps -array \
+          '<dict><key>tile-data</key><dict><key>file-data</key><dict><key>_CFURLString</key><string>/Applications/Ghostty.app</string><key>_CFURLStringType</key><integer>0</integer></dict></dict></dict>'
+        killall Dock
+      changed_when: true
+
     # ── nvm ────────────────────────────────────────────────────────────────────
 
     - name: Check if nvm is installed
