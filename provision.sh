@@ -97,6 +97,13 @@ if ! command -v claude &>/dev/null; then
 fi
 log "Claude Code: $(claude --version 2>/dev/null || echo 'installed')"
 
+# ── Ghostty ───────────────────────────────────────────────────────────────────
+if ! brew list --cask ghostty &>/dev/null 2>&1; then
+  log "Installing Ghostty..."
+  brew install --cask ghostty
+fi
+log "Ghostty: installed"
+
 # ── Summary ──────────────────────────────────────────────────────────────────
 log ""
 log "Provisioning complete. Summary:"
@@ -105,5 +112,6 @@ log "  Node.js:       $(node --version)"
 log "  npm:           $(npm --version)"
 log "  golangci-lint: $(golangci-lint --version 2>&1 | head -1)"
 log "  pre-commit:    $(pre-commit --version)"
+log "  Ghostty:       installed"
 log ""
 log "PATH additions written to ~/.zprofile (take effect on next login)."
