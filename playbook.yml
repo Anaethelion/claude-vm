@@ -1,0 +1,164 @@
+---
+- name: Provision elastic-dev VM
+  hosts: all
+  become: false
+
+  vars:
+    nvm_dir: "{{ ansible_env.HOME }}/.nvm"
+    nvm_version: "v0.40.1"
+    node_version: "24"
+    go_bin: "{{ ansible_env.HOME }}/go/bin"
+    brew_bin: /opt/homebrew/bin
+
+  tasks:
+
+    # ── Homebrew ──────────────────────────────────────────────────────────────
+
+    - name: Check if Homebrew is installed
+      ansible.builtin.stat:
+        path: /opt/homebrew/bin/brew
+      register: brew_binary
+
+    - name: Install Homebrew
+      ansible.builtin.shell: |
+        NONINTERACTIVE=1 /bin/bash -c \
+          "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+      when: not brew_binary.stat.exists
+      changed_when: true
+
+    - name: Persist Homebrew in ~/.zprofile
+      ansible.builtin.lineinfile:
+        path: "{{ ansible_env.HOME }}/.zprofile"
+        line: 'eval "$(/opt/homebrew/bin/brew shellenv)"'
+        create: true
+        mode: "0644"
+
+    # ── Brew formulae ──────────────────────────────────────────────────────────
+
+    - name: Install brew formulae
+      community.general.homebrew:
+        name:
+          - go
+          - golangci-lint
+          - pre-commit
+          - coreutils
+          - gh
+        state: present
+        path: "{{ brew_bin }}"
+
+    # ── Ghostty ────────────────────────────────────────────────────────────────
+
+    - name: Check if Ghostty app bundle exists
+      ansible.builtin.stat:
+        path: /Applications/Ghostty.app
+      register: ghostty_app
+
+    - name: Uninstall broken Ghostty cask if app bundle is missing
+      community.general.homebrew_cask:
+        name: ghostty
+        state: absent
+        path: "{{ brew_bin }}"
+      when: not ghostty_app.stat.exists
+      failed_when: false
+
+    - name: Install Ghostty
+      community.general.homebrew_cask:
+        name: ghostty
+        state: present
+        path: "{{ brew_bin }}"
+
+    - name: Remove quarantine from Ghostty
+      ansible.builtin.shell: xattr -rd com.apple.quarantine /Applications/Ghostty.app
+      failed_when: false
+      changed_when: false
+
+    - name: Register apps with Launch Services
+      ansible.builtin.shell: >
+        /System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister
+        -v /Applications/
+      failed_when: false
+      changed_when: false
+
+    # ── nvm ────────────────────────────────────────────────────────────────────
+
+    - name: Check if nvm is installed
+      ansible.builtin.stat:
+        path: "{{ nvm_dir }}"
+      register: nvm_dir_stat
+
+    - name: Install nvm
+      ansible.builtin.shell: |
+        curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/{{ nvm_version }}/install.sh | bash
+      when: not nvm_dir_stat.stat.exists
+      changed_when: true
+
+    - name: Persist nvm in ~/.zprofile
+      ansible.builtin.lineinfile:
+        path: "{{ ansible_env.HOME }}/.zprofile"
+        line: 'export NVM_DIR="{{ nvm_dir }}"; [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"'
+        create: true
+        mode: "0644"
+
+    # ── Node.js 24 ─────────────────────────────────────────────────────────────
+
+    - name: Check if Node.js 24 is installed
+      ansible.builtin.shell: |
+        export NVM_DIR="{{ nvm_dir }}"
+        [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+        nvm ls {{ node_version }}
+      register: node_installed
+      failed_when: false
+      changed_when: false
+
+    - name: Install Node.js 24
+      ansible.builtin.shell: |
+        export NVM_DIR="{{ nvm_dir }}"
+        [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+        nvm install {{ node_version }}
+        nvm alias default {{ node_version }}
+      when: node_installed.rc != 0
+      changed_when: true
+
+    # ── Go PATH ────────────────────────────────────────────────────────────────
+
+    - name: Persist Go bin in ~/.zprofile
+      ansible.builtin.lineinfile:
+        path: "{{ ansible_env.HOME }}/.zprofile"
+        line: 'export PATH="{{ go_bin }}:$PATH"'
+        create: true
+        mode: "0644"
+
+    # ── goimports ──────────────────────────────────────────────────────────────
+
+    - name: Check if goimports is installed
+      ansible.builtin.stat:
+        path: "{{ go_bin }}/goimports"
+      register: goimports_stat
+
+    - name: Install goimports
+      ansible.builtin.shell: go install golang.org/x/tools/cmd/goimports@latest
+      environment:
+        PATH: "{{ brew_bin }}:{{ go_bin }}:{{ ansible_env.PATH }}"
+        HOME: "{{ ansible_env.HOME }}"
+        GOPATH: "{{ ansible_env.HOME }}/go"
+      when: not goimports_stat.stat.exists
+      changed_when: true
+
+    # ── Claude Code ────────────────────────────────────────────────────────────
+
+    - name: Check if Claude Code is installed
+      ansible.builtin.shell: |
+        export NVM_DIR="{{ nvm_dir }}"
+        [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+        command -v claude
+      register: claude_check
+      failed_when: false
+      changed_when: false
+
+    - name: Install Claude Code
+      ansible.builtin.shell: |
+        export NVM_DIR="{{ nvm_dir }}"
+        [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+        npm install -g @anthropic-ai/claude-code
+      when: claude_check.rc != 0
+      changed_when: true
