@@ -1,4 +1,4 @@
-.PHONY: setup start check test venv help
+.PHONY: setup start check test venv help destroy
 
 help: ## Show available commands
 	@grep -E '^[a-zA-Z_-]+:.*##' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*##"}; {printf "  %-10s %s\n", $$1, $$2}'
@@ -24,3 +24,7 @@ check: venv ## Diff what Ansible would change (no writes)
 
 test: ## Run the test suite
 	bats tests/
+
+destroy: ## Stop and delete the VM
+	tart stop elastic-dev 2>/dev/null || true
+	tart delete elastic-dev
