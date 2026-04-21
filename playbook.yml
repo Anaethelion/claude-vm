@@ -175,25 +175,9 @@
       changed_when: false
 
     - name: Install Claude Desktop
-      ansible.builtin.shell: "{{ brew_bin }}/brew install --cask claude 2>&1"
-      register: claude_install_result
+      ansible.builtin.shell: "{{ brew_bin }}/brew install --cask claude"
       when: claude_cask_check.rc != 0
       changed_when: true
-
-    - name: Debug Claude Desktop install output
-      ansible.builtin.debug:
-        var: claude_install_result.stdout_lines
-      when: claude_install_result is not skipped
-
-    - name: Verify Claude Desktop app bundle exists after install
-      ansible.builtin.stat:
-        path: /Applications/Claude.app
-      register: claude_verify
-
-    - name: Fail if Claude Desktop not found after install
-      ansible.builtin.fail:
-        msg: "Claude Desktop not found at /Applications/Claude.app — install output: {{ claude_install_result.stdout }}"
-      when: not claude_verify.stat.exists
 
     - name: Attempt to remove quarantine from Claude
       ansible.builtin.shell: xattr -rd com.apple.quarantine /Applications/Claude.app
@@ -215,25 +199,6 @@
       ansible.builtin.shell: |
         export NVM_DIR="{{ nvm_dir }}"
         [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-        npm install -g @anthropic-ai/claude-code 2>&1
-      register: claude_cli_result
+        npm install -g @anthropic-ai/claude-code
       when: claude_cli_check.rc != 0
       changed_when: true
-
-    - name: Debug Claude Code CLI install output
-      ansible.builtin.debug:
-        var: claude_cli_result.stdout_lines
-      when: claude_cli_result is not skipped
-
-    - name: Verify Claude Code CLI binary exists after install
-      ansible.builtin.shell: |
-        export NVM_DIR="{{ nvm_dir }}"
-        [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-        command -v claude
-      register: claude_cli_verify
-      changed_when: false
-
-    - name: Fail if Claude Code CLI not found after install
-      ansible.builtin.fail:
-        msg: "claude binary not found after install — output: {{ claude_cli_result.stdout }}"
-      when: claude_cli_verify.rc != 0
