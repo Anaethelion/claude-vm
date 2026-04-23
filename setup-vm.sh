@@ -119,11 +119,15 @@ fi
 log "VM reachable at $VM_IP"
 
 log "Copying SSH key to VM..."
-sshpass -p "$VM_PASS" ssh-copy-id \
-  -o StrictHostKeyChecking=no \
-  -o PreferredAuthentications=password \
-  -o PubkeyAuthentication=no \
-  "$VM_USER@$VM_IP" 2>/dev/null || true
+if ! sshpass -p "$VM_PASS" ssh-copy-id \
+    -o StrictHostKeyChecking=no \
+    -o PreferredAuthentications=password \
+    -o PubkeyAuthentication=no \
+    "$VM_USER@$VM_IP"; then
+  echo "Error: ssh-copy-id failed. Ansible will not be able to authenticate." >&2
+  echo "  Check that you have a local SSH key (see ~/.ssh/id_*.pub)." >&2
+  exit 1
+fi
 
 ANSIBLE_OPTS=(-i "$VM_IP," -u "$VM_USER" "$SCRIPT_DIR/playbook.yml")
 if "$CHECK"; then
