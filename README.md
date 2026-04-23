@@ -28,6 +28,26 @@ brew install sshpass
 brew install bats-core
 ```
 
+### macOS Local Network permission
+
+On macOS Sonoma and later, the terminal you run `setup-vm.sh` from needs
+**Local Network** permission to reach the VM on `192.168.64.0/24`. Without
+it, `ping` and `ssh` to the VM fail silently with `No route to host` even
+though the VM is booted and has a DHCP lease.
+
+Grant it in **System Settings → Privacy & Security → Local Network**, toggle
+your terminal (Terminal.app, iTerm2, Ghostty, etc.) on, then fully quit and
+relaunch the terminal before retrying.
+
+### Python version
+
+The Ansible venv uses `python3` by default. Override with the `PYTHON`
+variable if you need a specific interpreter:
+
+```bash
+make setup PYTHON=python3.12
+```
+
 ## First-time setup
 
 ```bash
